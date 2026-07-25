@@ -1,0 +1,91 @@
+/* The row inherits Jellyfin's own detail-page text colour and dims the secondary parts with
+   opacity rather than a fixed colour, so it reads correctly on both the dark and light themes
+   (Jellyfin picks its theme itself, so a prefers-color-scheme rule alone would not cover it). */
+.jellyfin-air-date-row {
+  align-items: flex-start;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  gap: 2px;
+  /* Matches the spacing Jellyfin puts below its own .itemMiscInfo lines. */
+  margin-bottom: 0.6em;
+  min-height: 24px;
+  opacity: 0.85;
+}
+
+.jellyfin-air-date-row[data-state="ready"] {
+  opacity: 1;
+}
+
+.jellyfin-air-date-pill {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.jellyfin-air-date-label {
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.jellyfin-air-date-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jellyfin-air-date-source {
+  opacity: 0.55;
+}
+
+/* Anime score line: MAL logo + score, at full strength so it reads as its own line. */
+.jellyfin-air-date-rating {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  opacity: 1;
+}
+
+.jellyfin-air-date-rating-icon {
+  /* Inlined MyAnimeList logo (from image.myanimelist.net) so the extension stays
+     self-contained. The logo is square; sizing by height keeps it undistorted. */
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAMFBMVEX////7/P3j6PO4xOB0i8FEY6wxVKMvUqIvUaIuUaItUaItUKIrTqEoTJ8jR50YP5hvc84AAAAA4ElEQVR42mOYiQYYBkpgWvrM6ekzZ05PywRRQIG1b6pr3s6cVvvude3bSqDA7NTQa1dDK/OuhrgddT0OFKgJZMpNYsp+YsjA8pn5GUggiMHegCnPgcnYBC7AzMA0lcE/SAUmAOQzXWGKcYBrYTEwYbrMKCgIEqgEC1y+wnSZSUkRKPD7JFjg7ROglvcBQIHUcJC1LM+eMJUKxgHNYBDU6WSoSVJ59kQpz8DeSeWzkpJdJsQvaXlOMWXp09PKdgL9MnvnzJm7Z2c+n71z9u7dYO93gtDOTKBPO2cMYKgTEgAAMM4O20BRNMEAAAAASUVORK5CYII=");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
+
+.jellyfin-air-date-rating-name {
+  font-weight: 700;
+}
+
+.jellyfin-air-date-rating-tag {
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  opacity: 0.75;
+}
+
+.jellyfin-air-date-rating-score {
+  font-weight: 600;
+}
+
+/* Diagnostic line shown in place of a missing anime score, in orange so a failed score lookup
+   (a rate limit, or an unmatched title) stands out and is easy to debug instead of showing nothing. */
+.jellyfin-air-date-warning {
+  color: #ffa726;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: light) {
+  /* A darker orange keeps the warning readable on Jellyfin's light themes. */
+  .jellyfin-air-date-warning {
+    color: #c75300;
+  }
+}
