@@ -18,6 +18,19 @@
   opacity: 1;
 }
 
+/* Links in our own row (the MAL/AniList/TVmaze score and source names). A link looks identical to
+   the plain text it replaced - it inherits Jellyfin's colour and the surrounding opacity - and only
+   picks up an underline once hovered or keyboard-focused. */
+.jellyfin-air-date-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.jellyfin-air-date-link:hover,
+.jellyfin-air-date-link:focus-visible {
+  text-decoration: underline;
+}
+
 .jellyfin-air-date-pill {
   align-items: center;
   display: inline-flex;

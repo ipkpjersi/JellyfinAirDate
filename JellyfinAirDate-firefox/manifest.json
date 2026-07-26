@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Jellyfin Air Date",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adds episode air dates to Jellyfin show, season, and episode pages, showing the current, latest, and next episode air dates and when a season aired, plus the MyAnimeList (MAL) score for anime, which Jellyfin does not display itself.",
   "browser_specific_settings": {
     "gecko": {

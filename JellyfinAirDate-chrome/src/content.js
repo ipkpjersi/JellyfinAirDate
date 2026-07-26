@@ -253,19 +253,19 @@
 
     if (data.current) {
       const text = formatEpisode(data.current, airVerb(data.current.airDate));
-      row.append(buildPill("Current episode", text, source));
+      row.append(buildPill("Current episode", text, source, data.sourceUrl));
       titleParts.push(`Current episode: ${text}`);
     }
 
     if (data.latest) {
       const text = formatEpisode(data.latest, airVerb(data.latest.airDate));
-      row.append(buildPill("Latest episode", text, source));
+      row.append(buildPill("Latest episode", text, source, data.sourceUrl));
       titleParts.push(`Latest episode: ${text}`);
     }
 
     if (data.next) {
       const text = formatEpisode(data.next, "airs");
-      row.append(buildPill("Next episode", text, source));
+      row.append(buildPill("Next episode", text, source, data.sourceUrl));
       titleParts.push(`Next episode: ${text}`);
     }
 
@@ -293,7 +293,7 @@
     row.title = `${titleParts.join(" | ")}${source}`;
   }
 
-  function buildPill(labelText, valueText, source) {
+  function buildPill(labelText, valueText, source, sourceUrl) {
     const pill = document.createElement("span");
     pill.className = "jellyfin-air-date-pill";
 
@@ -305,20 +305,43 @@
     text.className = "jellyfin-air-date-text";
     text.textContent = valueText;
 
-    const sourceNode = document.createElement("span");
-    sourceNode.className = "jellyfin-air-date-source";
-    sourceNode.textContent = source;
+    // The air-date source name links to the show's page on that site when its URL is known. The
+    // leading space that `source` carries for the row tooltip is dropped here so the hover
+    // underline starts at the name itself; the pill's flex gap already supplies the spacing.
+    const sourceNode = buildLinkable("span", "jellyfin-air-date-source", sourceUrl);
+    sourceNode.textContent = sourceUrl ? source.trim() : source;
 
     pill.append(label, text, sourceNode);
     return pill;
   }
 
+  function buildLinkable(tagName, className, url) {
+    // A node that becomes an anchor when a URL is known and stays a plain element otherwise. The
+    // anchor keeps the jellyfin-air-date-link class, which inherits the surrounding colour and only
+    // adds an underline on hover, so the text looks unchanged until it is hovered.
+    if (!url) {
+      const node = document.createElement(tagName);
+      node.className = className;
+      return node;
+    }
+
+    const anchor = document.createElement("a");
+    anchor.className = `${className} jellyfin-air-date-link`;
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    // The detail header sits inside Jellyfin's own clickable UI, so keep the click from also
+    // triggering whatever Jellyfin has bound further up the tree.
+    anchor.addEventListener("click", (event) => event.stopPropagation());
+    return anchor;
+  }
+
   function buildRatingLine(rating, tag) {
     // The anime score line: the MAL logo (or the source name for the AniList/TVmaze fallbacks)
     // followed by the score, all in white so it reads as its own distinct line. An optional
-    // tag (e.g. "EP") distinguishes the per-episode score from the series score.
-    const line = document.createElement("span");
-    line.className = "jellyfin-air-date-rating";
+    // tag (e.g. "EP") distinguishes the per-episode score from the series score. The whole line
+    // links to the entry it was scored from (MAL/AniList/TVmaze) when that URL is known.
+    const line = buildLinkable("span", "jellyfin-air-date-rating", rating.url);
     line.title = `${rating.source}${tag ? " episode" : ""} score ${formatRating(rating)}`;
 
     if (rating.source === "MAL") {
@@ -573,6 +596,7 @@
     const showWithEpisodes = await detailResponse.json();
     const embedded = showWithEpisodes?._embedded;
     const now = new Date();
+    const showUrl = typeof showWithEpisodes?.url === "string" ? showWithEpisodes.url : null;
 
     // TVmaze's own average rating (already on a 0-10 scale) is kept as a last-resort score,
     // used only when the anime's MAL/AniList score is unavailable (see fetchAirInfo). null
@@ -580,7 +604,7 @@
     const tvmazeAverage = showWithEpisodes?.rating?.average;
     const rating =
       typeof tvmazeAverage === "number" && tvmazeAverage > 0
-        ? { score: tvmazeAverage, max: 10, source: "TVmaze" }
+        ? { score: tvmazeAverage, max: 10, source: "TVmaze", url: showUrl }
         : null;
 
     const next = toTvmazeEpisode(embedded?.nextepisode);
@@ -608,6 +632,7 @@
 
     return {
       source: "TVmaze",
+      sourceUrl: showUrl,
       rating,
       current: currentEpisode,
       latest: latestEpisode,
@@ -665,6 +690,16 @@
       episode: episode.number || null,
       season: episode.season || null
     };
+  }
+
+  // Public entry pages for the ids these APIs return, used to make the score and source names in
+  // our row clickable. Both sites resolve an id-only URL, so no title slug is needed.
+  function anilistUrl(mediaId) {
+    return typeof mediaId === "number" ? `https://anilist.co/anime/${mediaId}` : null;
+  }
+
+  function malAnimeUrl(malId) {
+    return typeof malId === "number" ? `https://myanimelist.net/anime/${malId}` : null;
   }
 
   async function fetchFromAniList(context, { skipJikan = false } = {}) {
@@ -773,7 +808,7 @@
       rating = await guard(fetchMalScore(seasonMedia.idMal));
     }
     if (!rating && typeof seasonMedia?.averageScore === "number") {
-      rating = { score: seasonMedia.averageScore / 10, max: 10, source: "AniList" };
+      rating = { score: seasonMedia.averageScore / 10, max: 10, source: "AniList", url: anilistUrl(seasonMedia.id) };
     }
 
     // MAL per-episode poll score, on episode pages, from the resolved season entry. Skipped when
@@ -797,6 +832,7 @@
     log(`  AniList result: rating ${rating ? `${rating.score} (${rating.source})` : "none"}${skipJikan ? " [skipJikan]" : ""}${state.failed ? " [some sub-calls failed]" : ""}`);
     return {
       source: "AniList",
+      sourceUrl: anilistUrl(seasonMedia?.id ?? media?.id),
       rating,
       episodeRating,
       current: currentEpisode,
@@ -916,7 +952,9 @@
     const score = payload?.data?.score;
     // Jikan returns 0 (not null) for an anime with no score yet, so treat 0 as "no score"
     // and let the caller fall back to the AniList average.
-    return typeof score === "number" && score > 0 ? { score, max: 10, source: "MAL" } : null;
+    return typeof score === "number" && score > 0
+      ? { score, max: 10, source: "MAL", url: malAnimeUrl(idMal) }
+      : null;
   }
 
   // A MAL entry counts as a numbered season only if it is a TV or ONA (newer seasons often stream
@@ -1223,7 +1261,9 @@
 
   async function buildMalRating(context, entry) {
     // Turn a resolved MAL entry { malId, episodes, score } into the series and per-episode ratings.
-    let rating = entry.score ? { score: entry.score, max: 10, source: "MAL" } : null;
+    let rating = entry.score
+      ? { score: entry.score, max: 10, source: "MAL", url: malAnimeUrl(entry.malId) }
+      : null;
     if (!rating && entry.malId) {
       // The resolved entry carried no inline score (rare); ask MAL directly before giving up.
       rating = await fetchMalScore(entry.malId).catch(() => null);
@@ -1264,10 +1304,19 @@
       malEpisodesPageCache.set(cacheKey, list);
     }
 
-    const score = list.find((item) => item?.mal_id === episode)?.score;
+    const entry = list.find((item) => item?.mal_id === episode);
+    const score = entry?.score;
     // Convert the 1-5 poll average to a /10 score (score / 5 * 10); null/0 means no votes.
+    // The episodes list carries each episode's own MAL page URL, so the EP line links straight to
+    // that episode rather than to the series entry; fall back to the series page when it is absent.
     return typeof score === "number" && score > 0
-      ? { score: (score / 5) * 10, max: 10, source: "MAL", perEpisode: true }
+      ? {
+          score: (score / 5) * 10,
+          max: 10,
+          source: "MAL",
+          perEpisode: true,
+          url: typeof entry?.url === "string" && entry.url ? entry.url : malAnimeUrl(idMal)
+        }
       : null;
   }
 

@@ -2,6 +2,11 @@
 
 All notable changes to Jellyfin Air Date are listed here, newest first. Each entry matches a version bump in both the Chrome and Firefox manifests. The notes for a version can be copy-pasted into the Firefox Add-ons release notes field.
 
+## 0.2.0
+
+- The MyAnimeList, AniList, and TVmaze names and scores the extension adds are now clickable and open the matching entry in a new tab: the score line opens the anime's MyAnimeList or AniList page (the per-episode score opens that episode's own MyAnimeList page), and the source name next to each air date opens the show on TVmaze or AniList. Jellyfin already links IMDb and TMDB itself, so those are left alone.
+- The links do not change how any of the text looks: they take the colour and opacity they already had and only show an underline while hovered or keyboard-focused.
+
 ## 0.1.0
 
 - Initial release, ported from Plex Air Date 0.9.2 with the same feature set: the current, latest, and next episode air dates on show, season, and episode pages, the year a season aired on season pages, the MyAnimeList (MAL) score for anime, and MAL's per-episode poll score on episode pages. The data sources (TVmaze for air dates, Tenrai's MyAnimeList API and AniList for anime scores), the caching, the stored MAL ids, and the rate-limit handling are unchanged.
